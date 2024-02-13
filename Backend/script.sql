@@ -6,7 +6,7 @@ CREATE TABLE Users (
   username VARCHAR(255),
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255),
-  userRole ENUM('Administrateur', 'Partenaire', 'Formateur', 'Apprenant') NOT NULL
+  userRole ENUM('Administrateur', 'Partenaire', 'Formateur', 'Apprenant','Club') NOT NULL
 );
 
 CREATE TABLE Administrateurs (
@@ -14,13 +14,25 @@ CREATE TABLE Administrateurs (
   userId INT,
   FOREIGN KEY (userId) REFERENCES Users(userId)
 );
+CREATE TABLE Organismes (
+  organismeId INT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(255)
+);
+
+CREATE TABLE Offres (
+  offreId INT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(255)
+);
 
 CREATE TABLE Partenaires (
   partenaireId INT AUTO_INCREMENT PRIMARY KEY,
   description TEXT,
   userId INT,
-  FOREIGN KEY (userId) REFERENCES Users(userId)
+  FOREIGN KEY (userId) REFERENCES Users(userId),
+  organismeId INT,
+  Foreign key (organismeId) references Organismes(organismeId)
 );
+
 
 CREATE TABLE Formateurs (
   formateurId INT AUTO_INCREMENT PRIMARY KEY,
@@ -43,6 +55,7 @@ CREATE TABLE Formateurs (
 );
 
 
+
 CREATE TABLE ChargesFormation (
   chargesId INT AUTO_INCREMENT PRIMARY KEY,
   tarif_unitaire float,
@@ -55,16 +68,6 @@ CREATE TABLE ChargesFormation (
     montant_ttc float,
     notes TEXT
 
-);
-
-CREATE TABLE Organismes (
-  organismeId INT AUTO_INCREMENT PRIMARY KEY,
-  nom VARCHAR(255)
-);
-
-CREATE TABLE Offres (
-  offreId INT AUTO_INCREMENT PRIMARY KEY,
-  nom VARCHAR(255)
 );
 
 
@@ -91,18 +94,14 @@ CREATE TABLE Theme (
 
 );
 
-CREATE TABLE DemandeDevis (
-    demandeId INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL
-);
 
 CREATE TABLE Formations (
   formationId INT AUTO_INCREMENT PRIMARY KEY,
-  organismeId INT NOT NULL,
   offreId INT NOT NULL,
   themeId INT NOT NULL,
   chargesId INT NOT NULL,
-  FOREIGN KEY (organismeId) REFERENCES Organismes(organismeId),
+  partenaireId INT NOT NULL,
+  FOREIGN KEY (partenaireId) REFERENCES Partenaires(partenaireId),
   FOREIGN KEY (offreId) REFERENCES Offres(offreId),
   FOREIGN KEY (themeId) REFERENCES Theme(themeId),
   FOREIGN KEY (chargesId) REFERENCES ChargesFormation(chargesId),
@@ -114,8 +113,38 @@ CREATE TABLE Formations (
   reduction_pourcentage float,
   objet VARCHAR(255),
   notes TEXT,
+  evaluation DECIMAL(2, 1),
+  type_formation ENUM('A la carte', 'Avant promotion')
+);
+
+
+CREATE TABLE DemandeDevis (
+    demandeId INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    formationId INT,
+    FOREIGN KEY (formationId) REFERENCES Formations(formationId)
+);
+
+create TABLE EvaluationFormation(
+  eval_formationId INT AUTO_INCREMENT PRIMARY KEY,
+  formationId INT,
+  FOREIGN KEY (formationId) REFERENCES Formations(formationId),
+  partenaireId INT,
+  FOREIGN KEY (partenaireId) REFERENCES Partenaires(partenaireId),
   evaluation DECIMAL(2, 1)
 );
+
+create TABLE EvaluationFormateur(
+  eval_formateurId INT AUTO_INCREMENT PRIMARY KEY,
+  formateurId INT,
+  FOREIGN KEY (formateurId) REFERENCES Formateurs(formateurId),
+  partenaireId INT,
+  FOREIGN KEY (partenaireId) REFERENCES Partenaires(partenaireId),
+  evaluation DECIMAL(2, 1),
+  UNIQUE KEY unique_formateur_partenaire (formateurId, partenaireId)
+);
+
+
 
 CREATE TABLE Apprenants (
   apprenantId INT AUTO_INCREMENT PRIMARY KEY,
@@ -169,7 +198,9 @@ CREATE TABLE Attestation (
 create TABLE Club(
   clubId INT AUTO_INCREMENT PRIMARY KEY,
   nom VARCHAR(255),
-  slogan TEXT
+  slogan TEXT,
+  userId INT,
+  FOREIGN KEY (userId) REFERENCES Users(userId)
 );
 
 create TABLE Evenements(
@@ -198,4 +229,43 @@ create TABLE Adherent(
   clubId INT,
   FOREIGN KEY (userId) REFERENCES Users(userId),
   FOREIGN KEY (clubId) REFERENCES Club(clubId)
+);
+
+
+create table DemandeSponsoring(
+sponsoringId INT AUTO_INCREMENT PRIMARY KEY,
+partenaireId INT,
+FOREIGN KEY (partenaireId) REFERENCES Partenaires(partenaireId),
+eventId INT,
+FOREIGN KEY (eventId) REFERENCES Evenements(eventId),
+clubId INT, 
+FOREIGN KEY (clubId) REFERENCES Club(clubId),
+emetteur ENUM('Club', 'Partenaire'),
+etat ENUM('En attente', 'Acceptee', 'Refusee')
+);
+
+
+create table PapierAdministratif(
+  papierId INT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(255),
+  description TEXT,
+  path VARCHAR(255)
+);
+
+
+create TABLE DemandeOrganisationEvenement(
+  demandeOrganisationEventId INT AUTO_INCREMENT PRIMARY KEY,
+  eventId INT,
+  FOREIGN KEY (eventId) REFERENCES Evenements(eventId),
+  clubId INT, 
+  FOREIGN KEY (clubId) REFERENCES Club(clubId),
+  etat ENUM('En attente', 'Acceptee', 'Refusee'),
+
+  nom VARCHAR(255),
+  date_debut DATE,
+  date_fin DATE,
+  lieu VARCHAR(255),
+  description TEXT,
+  notes TEXT,
+  espace_pedagogique VARCHAR(255)
 );
